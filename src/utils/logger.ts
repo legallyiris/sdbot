@@ -23,6 +23,9 @@ export function initDiscordLogger(client: Client) {
     const channel = client.channels.cache.get(config.logChannel);
     if (channel?.isTextBased()) {
       logChannel = channel as TextChannel;
+      logChannel.send("``` ```").catch((err) => {
+        logger.error(`Failed to send log to Discord: ${err.message}`);
+      });
     } else {
       logger.error("Log channel not found or not a text channel");
     }
