@@ -1,6 +1,7 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import config from "./config";
+import db, { initializeDatabase } from "./database";
 import logger from "./utils/logger";
 
 const client = new Client({
@@ -16,6 +17,20 @@ logger.initDiscordLogger(client);
 
 client.once(Events.ClientReady, async (c) => {
   logger.info(`Logged in as \`${c.user?.tag}\``);
+  logger.info("Initializing database...");
+
+  initializeDatabase();
+  logger.info("\tDatabase initialized");
 });
 
 void client.login(config.token);
+
+async function shutdown() {
+  logger.info("Shutting down...");
+  await client.destroy();
+  db.close();
+  process.exit(0);
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
