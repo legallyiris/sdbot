@@ -1,3 +1,4 @@
+import os from "node:os";
 import type { Client, TextChannel } from "discord.js";
 import { createLogger, format, transports } from "winston";
 import config from "../config";
@@ -18,12 +19,28 @@ const logger = createLogger({
 
 let logChannel: TextChannel | null = null;
 
+function asciiDoc(message: string) {
+  return `\`\`\`asciidoc\n${message}\n\`\`\``;
+}
+
 export function initDiscordLogger(client: Client) {
   client.on("ready", () => {
     const channel = client.channels.cache.get(config.logChannel);
     if (channel?.isTextBased()) {
       logChannel = channel as TextChannel;
-      logChannel.send("``` ```").catch((err) => {
+
+      const hostname = os.hostname();
+      const platform = os.platform();
+      const arch = os.arch();
+
+      const message = asciiDoc(`
+      = Machine Details =
+      Hostname :: ${hostname}
+      Platform :: ${platform}
+      Arch     :: ${arch}
+      `);
+
+      logChannel.send(message).catch((err) => {
         logger.error(`Failed to send log to Discord: ${err.message}`);
       });
     } else {
