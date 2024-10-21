@@ -1,3 +1,6 @@
+config.json
+*.sqlite
+
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
 # Logs
@@ -9,6 +12,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+*.log
 
 # Caches
 
