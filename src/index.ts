@@ -1,6 +1,8 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import config from "./config";
+import logger from "./utils/logger";
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -10,8 +12,10 @@ const client = new Client({
   ],
 });
 
+logger.initDiscordLogger(client);
+
 client.once(Events.ClientReady, async (c) => {
-  console.info(`Logged in as \`${c.user?.tag}\``);
+  logger.info(`Logged in as \`${c.user?.tag}\``);
 });
 
 void client.login(config.token);
