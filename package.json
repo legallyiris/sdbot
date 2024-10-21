@@ -4,9 +4,13 @@
   "type": "module",
   "scripts": {
     "run": "bun src/index.ts",
-    "dev": "bun --watch src/index.ts"
+    "dev": "bun --watch src/index.ts",
+    "biome:check": "biome check --no-errors-on-unmatched --write ./",
+    "biome:fmt": "biome format --no-errors-on-unmatched --write ./",
+    "biome:lint": "biome lint --no-errors-on-unmatched --write ./"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@types/bun": "latest"
   },
   "peerDependencies": {
