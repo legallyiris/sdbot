@@ -2,6 +2,8 @@ import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import config from "./config";
 import db, { initializeDatabase } from "./database";
+import { loadEventsFromDirectory } from "./handlers/eventHandler.ts";
+import { loadInteractionsFromDirectory } from "./handlers/interactionHandler.ts";
 import logger from "./utils/logger";
 
 const client = new Client({
@@ -21,6 +23,11 @@ client.once(Events.ClientReady, async (c) => {
 
   initializeDatabase();
   logger.info("\tDatabase initialized");
+  logger.info("Loading events and interactions...");
+
+  await loadInteractionsFromDirectory("./src/interactions", client);
+  await loadEventsFromDirectory("./src/events", client);
+  logger.info("\tEvents and interactions loaded");
 });
 
 void client.login(config.token);
