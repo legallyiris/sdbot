@@ -3,7 +3,7 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "run": "bun src/index.ts",
+    "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "biome:check": "biome check --no-errors-on-unmatched --write ./",
     "biome:fmt": "biome format --no-errors-on-unmatched --write ./",
