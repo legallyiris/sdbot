@@ -48,11 +48,20 @@ export default {
 
     if (interaction.isCommand())
       return handleInteraction<CommandInteraction>(client, interaction);
-    if (interaction.isUserContextMenuCommand())
-      return handleInteraction<ContextMenuCommandInteraction>(
-        client,
-        interaction,
-      );
+    if (interaction.isContextMenuCommand()) {
+      if (interaction.isUserContextMenuCommand()) {
+        return handleInteraction<ContextMenuCommandInteraction>(
+          client,
+          interaction,
+        );
+      }
+      if (interaction.isMessageContextMenuCommand()) {
+        return handleInteraction<ContextMenuCommandInteraction>(
+          client,
+          interaction,
+        );
+      }
+    }
 
     if (interaction.isRepliable())
       return await interaction.reply({
