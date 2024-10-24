@@ -1,30 +1,15 @@
 import { type BaseInteraction, type Client, Events } from "discord.js";
-import { createGuild, createUser, get } from "../database.ts";
+import { createGuild, createUser, getGuild, getUser } from "../database.ts";
 
-function checkUser(userId: string, guildId: string) {
+function checkUser(userId: string, guildId: string): void {
   checkGuild(guildId);
-
-  const user = get("SELECT * FROM users WHERE user_id = ? AND guild_id = ?", [
-    userId,
-    guildId,
-  ]);
-
-  if (!user) {
-    console.log(`Creating user ${userId}`);
-    createUser(userId, guildId);
-  } else {
-    console.log(`User ${userId} already exists`);
-  }
+  const user = getUser(userId, guildId);
+  if (!user) createUser(userId, guildId);
 }
 
-function checkGuild(guildId: string) {
-  const guild = get("SELECT * FROM guilds WHERE guild_id = ?", [guildId]);
-  if (!guild) {
-    console.log(`Creating guild ${guildId}`);
-    createGuild(guildId);
-  } else {
-    console.log(`Guild ${guildId} already exists`);
-  }
+function checkGuild(guildId: string): void {
+  const guild = getGuild(guildId);
+  if (!guild) createGuild(guildId);
 }
 
 export default {
