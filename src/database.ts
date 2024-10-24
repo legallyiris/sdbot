@@ -1,14 +1,28 @@
 import { Database, type SQLQueryBindings } from "bun:sqlite";
 import config from "./config";
+import type {
+  BugSchema,
+  GuildSchema,
+  MediaSchema,
+  UserSchema,
+} from "./types/Schemas";
 
 const db = new Database(config.databasePath);
 
 export function initializeDatabase() {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS guilds (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT UNIQUE NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT UNIQUE NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      guild_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (guild_id) REFERENCES guilds(guild_id)
     );
 
     CREATE TABLE IF NOT EXISTS bugs (
@@ -37,10 +51,16 @@ export function initializeDatabase() {
 
 export default db;
 
-export function createUser(userId: string) {
+export function createUser(userId: string, guildId: string): UserSchema {
   return db
-    .query("INSERT INTO users (user_id) VALUES (?) RETURNING id")
-    .get(userId) as { id: number };
+    .query("INSERT INTO users (user_id, guild_id) VALUES (?, ?) RETURNING *")
+    .get(userId, guildId) as UserSchema;
+}
+
+export function createGuild(guildId: string): GuildSchema {
+  return db
+    .query("INSERT INTO guilds (guild_id) VALUES (?) RETURNING *")
+    .get(guildId) as GuildSchema;
 }
 
 export function createBug(
@@ -48,12 +68,12 @@ export function createBug(
   userId: number,
   title: string,
   description: string,
-) {
+): BugSchema {
   return db
     .query(
-      "INSERT INTO bugs (bug_id, user_id, title, description) VALUES (?, ?, ?, ?) RETURNING id",
+      "INSERT INTO bugs (bug_id, user_id, title, description) VALUES (?, ?, ?, ?) RETURNING *",
     )
-    .get(bugId, userId, title, description) as { id: number };
+    .get(bugId, userId, title, description) as BugSchema;
 }
 
 export function createMedia(
@@ -61,12 +81,12 @@ export function createMedia(
   data: Uint8Array,
   userId: number,
   bugId?: number,
-) {
+): MediaSchema {
   return db
     .query(
-      "INSERT INTO media (media_type, data, user_id, bug_id) VALUES (?, ?, ?, ?) RETURNING id",
+      "INSERT INTO media (media_type, data, user_id, bug_id) VALUES (?, ?, ?, ?) RETURNING *",
     )
-    .get(mediaType, data, userId, bugId ?? null) as { id: number };
+    .get(mediaType, data, userId, bugId ?? null) as MediaSchema;
 }
 
 export function query<T = unknown>(
@@ -77,7 +97,31 @@ export function query<T = unknown>(
   return db.query(sql).all() as T[];
 }
 
+export function get<T = unknown>(sql: string, params?: SQLQueryBindings[]): T {
+  if (params) return db.query(sql).get(...params) as T;
+  return db.query(sql).get() as T;
+}
+
 export function run(sql: string, params?: SQLQueryBindings[]): void {
   if (params) db.query(sql).run(...params);
   else db.query(sql).run();
+}
+
+export function getUser(userId: string, guildId: string) {
+  return query<UserSchema>(
+    "SELECT * FROM users WHERE user_id = ? AND guild_id = ?",
+    [userId, guildId],
+  )[0];
+}
+
+export function getGuild(guildId: string) {
+  return get<GuildSchema>("SELECT * FROM guilds WHERE guild_id = ?", [guildId]);
+}
+
+export function getBug(bugId: number) {
+  return get<BugSchema>("SELECT * FROM bugs WHERE bug_id = ?", [bugId]);
+}
+
+export function getMedia(mediaId: number) {
+  return get<MediaSchema>("SELECT * FROM media WHERE id = ?", [mediaId]);
 }
