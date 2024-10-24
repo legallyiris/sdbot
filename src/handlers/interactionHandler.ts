@@ -1,8 +1,16 @@
 import { readdir } from "node:fs/promises";
-import type { ApplicationCommandData, Client } from "discord.js";
+import {
+  type ApplicationCommandData,
+  type Client,
+  Collection,
+} from "discord.js";
 import { REST, Routes, type Snowflake } from "discord.js";
+
 import config from "../config.ts";
+import type { Command } from "../types/Interactions.ts";
 import logger from "../utils/logger.ts";
+
+export const commands = new Collection<string, Command>();
 
 async function registerInteractions(
   client: Client,
@@ -25,12 +33,18 @@ async function loadInteractionsFromDirectory(
   directory: string,
   client: Client,
 ): Promise<void> {
-  const interactionFiles = await readdir(directory);
+  const interactionDirectory = await readdir(directory);
   const interactions: ApplicationCommandData[] = [];
 
-  for (const file of interactionFiles) {
-    const { default: interaction } = await import(`../interactions/${file}`);
-    interactions.push(interaction.data);
+  for (const dir of interactionDirectory) {
+    const files = await readdir(`${directory}/${dir}`);
+    for (const file of files) {
+      const { default: interaction } = await import(
+        `../interactions/${dir}/${file}`
+      );
+      interactions.push(interaction.data);
+      commands.set(interaction.data.name, interaction);
+    }
   }
 
   await registerInteractions(client, interactions);
