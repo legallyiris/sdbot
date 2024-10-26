@@ -27,7 +27,6 @@ export function initializeDatabase() {
 
     CREATE TABLE IF NOT EXISTS bugs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      bug_id INTEGER UNIQUE NOT NULL,
       user_id INTEGER NOT NULL,
       status TEXT CHECK(status IN ('open', 'closed')) DEFAULT 'open',
       title TEXT NOT NULL,
@@ -64,16 +63,15 @@ export function createGuild(guildId: string): GuildSchema {
 }
 
 export function createBug(
-  bugId: number,
   userId: number,
   title: string,
   description: string,
 ): BugSchema {
   return db
     .query(
-      "INSERT INTO bugs (bug_id, user_id, title, description) VALUES (?, ?, ?, ?) RETURNING *",
+      "INSERT INTO bugs (user_id, title, description) VALUES (?, ?, ?) RETURNING *",
     )
-    .get(bugId, userId, title, description) as BugSchema;
+    .get(userId, title, description) as BugSchema;
 }
 
 export function createMedia(
@@ -119,7 +117,7 @@ export function getGuild(guildId: string) {
 }
 
 export function getBug(bugId: number) {
-  return get<BugSchema>("SELECT * FROM bugs WHERE bug_id = ?", [bugId]);
+  return get<BugSchema>("SELECT * FROM bugs WHERE id = ?", [bugId]);
 }
 
 export function getMedia(mediaId: number) {

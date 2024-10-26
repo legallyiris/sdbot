@@ -13,7 +13,6 @@ export interface UserSchema {
 
 export interface BugSchema {
   id: number;
-  bug_id: number;
   user_id: number;
   status: "open" | "closed";
   title: string;
