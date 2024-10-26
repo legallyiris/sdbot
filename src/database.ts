@@ -14,7 +14,14 @@ export function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS guilds (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       guild_id TEXT UNIQUE NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+      suggestion_forum TEXT,
+      bug_channel TEXT,
+      commands_channel TEXT,
+      highlights_channel TEXT,
+
+      manager_roles TEXT
     );
 
     CREATE TABLE IF NOT EXISTS users (

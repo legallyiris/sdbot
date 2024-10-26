@@ -2,6 +2,18 @@ export interface GuildSchema {
   id: number;
   guild_id: string;
   created_at: Date;
+
+  suggestion_forum: string;
+  bug_channel: string;
+  commands_channel: string;
+  highlights_channel: string;
+
+  /**
+    The IDs of roles that can delete, edit, and close bugs.
+    Returns a stringified JSON array of strings.
+    @example ["123456789012345678", "123456789012345678"]
+  */
+  manager_roles: string;
 }
 
 export interface UserSchema {
