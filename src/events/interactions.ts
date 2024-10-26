@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import { createGuild, createUser, getGuild, getUser } from "../database.ts";
 import { commands } from "../handlers/interactionHandler.ts";
+import logger from "../utils/logger.ts";
 
 function checkUser(userId: string, guildId: string): void {
   checkGuild(guildId);
@@ -45,6 +46,9 @@ export default {
   async execute(client: Client, interaction: BaseInteraction) {
     if (!interaction.guild) return;
     checkUser(interaction.user.id, interaction.guild.id);
+    logger.info(
+      `Interaction received from ${interaction.user.tag} in ${interaction.guild.name} (${interaction.guild.id})`,
+    );
 
     if (interaction.isCommand())
       return handleInteraction<CommandInteraction>(client, interaction);
@@ -63,10 +67,14 @@ export default {
       }
     }
 
-    if (interaction.isRepliable())
+    if (interaction.isRepliable()) {
+      logger.warn(
+        `Unsupported interaction type: ${interaction.type} (${interaction.id})`,
+      );
       return await interaction.reply({
         content: "This interaction is not supported.",
         ephemeral: true,
       });
+    }
   },
 };
