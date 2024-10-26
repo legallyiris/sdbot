@@ -4,6 +4,7 @@ import config from "./config";
 import db, { initializeDatabase } from "./database";
 import { loadEventsFromDirectory } from "./handlers/eventHandler.ts";
 import { loadInteractionsFromDirectory } from "./handlers/interactionHandler.ts";
+import { loadButtonsAndModals } from "./handlers/otherHandlers.ts";
 import logger from "./utils/logger";
 
 const client = new Client({
@@ -27,6 +28,7 @@ client.once(Events.ClientReady, async (c) => {
 
   await loadInteractionsFromDirectory("./src/interactions", client);
   await loadEventsFromDirectory("./src/events", client);
+  await loadButtonsAndModals();
   logger.info("\tEvents and interactions loaded");
 });
 

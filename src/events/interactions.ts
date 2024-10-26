@@ -1,29 +1,61 @@
 import {
   type BaseInteraction,
+  type ButtonInteraction,
+  type CacheType,
   type Client,
   type CommandInteraction,
   type ContextMenuCommandInteraction,
   Events,
+  type ModalSubmitInteraction,
 } from "discord.js";
 import { createGuild, createUser, getGuild, getUser } from "../database.ts";
 import { commands } from "../handlers/interactionHandler.ts";
+import { buttons, modals } from "../handlers/otherHandlers.ts";
+import type { GuildSchema, UserSchema } from "../types/Schemas.ts";
 import logger from "../utils/logger.ts";
 
-function checkUser(userId: string, guildId: string): void {
+function checkUser(userId: string, guildId: string): UserSchema {
   checkGuild(guildId);
   const user = getUser(userId, guildId);
-  if (!user) createUser(userId, guildId);
+  return user || createUser(userId, guildId);
 }
 
-function checkGuild(guildId: string): void {
+function checkGuild(guildId: string): GuildSchema {
   const guild = getGuild(guildId);
-  if (!guild) createGuild(guildId);
+  return guild || createGuild(guildId);
 }
 
-async function handleInteraction<T extends BaseInteraction>(
+async function handleInteraction(
   client: Client,
-  interaction: T,
+  interaction:
+    | ButtonInteraction
+    | ModalSubmitInteraction
+    | CommandInteraction
+    | ContextMenuCommandInteraction,
+  guildSchema: GuildSchema,
+  userSchema: UserSchema,
 ): Promise<void> {
+  if (interaction.isButton()) {
+    const buttonId = interaction.customId.split("-")[1];
+    const button = buttons.get(buttonId);
+    if (!button)
+      void interaction.reply({
+        content: "This button is not supported.",
+        ephemeral: true,
+      });
+    else return button.execute(client, interaction, guildSchema, userSchema);
+  }
+  if (interaction.isModalSubmit()) {
+    const modalId = interaction.customId.split("-")[1];
+    const modal = modals.get(modalId);
+    if (!modal)
+      void interaction.reply({
+        content: "This modal is not supported.",
+        ephemeral: true,
+      });
+    else return modal.execute(client, interaction, guildSchema, userSchema);
+  }
+
   if (!("commandName" in interaction)) return;
   const command = commands.get(interaction.commandName as string);
   if (!command) return;
@@ -33,7 +65,7 @@ async function handleInteraction<T extends BaseInteraction>(
   } catch (error) {
     console.error(error);
     if (interaction.isRepliable()) {
-      interaction.reply({
+      await interaction.reply({
         content: "There was an error while executing this command!",
         ephemeral: true,
       });
@@ -45,27 +77,28 @@ export default {
   event: Events.InteractionCreate,
   async execute(client: Client, interaction: BaseInteraction) {
     if (!interaction.guild) return;
-    checkUser(interaction.user.id, interaction.guild.id);
+    const user = checkUser(interaction.user.id, interaction.guild.id);
+    const guild = checkGuild(interaction.guild.id);
+
     logger.info(
       `Interaction received from ${interaction.user.tag} in ${interaction.guild.name} (${interaction.guild.id})`,
     );
 
     if (interaction.isCommand())
-      return handleInteraction<CommandInteraction>(client, interaction);
+      return handleInteraction(client, interaction, guild, user);
     if (interaction.isContextMenuCommand()) {
       if (interaction.isUserContextMenuCommand()) {
-        return handleInteraction<ContextMenuCommandInteraction>(
-          client,
-          interaction,
-        );
+        return handleInteraction(client, interaction, guild, user);
       }
       if (interaction.isMessageContextMenuCommand()) {
-        return handleInteraction<ContextMenuCommandInteraction>(
-          client,
-          interaction,
-        );
+        return handleInteraction(client, interaction, guild, user);
       }
     }
+
+    if (interaction.isButton())
+      return handleInteraction(client, interaction, guild, user);
+    if (interaction.isModalSubmit())
+      return handleInteraction(client, interaction, guild, user);
 
     if (interaction.isRepliable()) {
       logger.warn(
