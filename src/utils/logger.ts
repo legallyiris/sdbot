@@ -3,6 +3,10 @@ import type { Client, TextChannel } from "discord.js";
 import { createLogger, format, transports } from "winston";
 import config from "../config";
 
+const queue: string[] = [];
+let logChannel: TextChannel | null = null;
+let timeout: Timer | null = null;
+
 const logger = createLogger({
   level: "info",
   format: format.combine(
@@ -16,8 +20,6 @@ const logger = createLogger({
     new transports.Console(),
   ],
 });
-
-let logChannel: TextChannel | null = null;
 
 function asciiDoc(message: string) {
   return `\`\`\`asciidoc\n${message}\n\`\`\``;
@@ -52,12 +54,22 @@ export function initDiscordLogger(client: Client) {
 export function log(level: string, message: string) {
   logger.log(level, message);
 
-  if (logChannel) {
-    const discordMessage = `**[${level.toUpperCase()}]** ${message}`;
-    logChannel.send(discordMessage).catch((err) => {
+  const discordMessage = `**[${level.toUpperCase()}]** ${message}`;
+  queue.push(discordMessage);
+
+  if (timeout) {
+    clearTimeout(timeout);
+  }
+
+  timeout = setTimeout(() => {
+    const message = asciiDoc(queue.join("\n"));
+    if (!logChannel) return;
+    logChannel.send(message).catch((err) => {
       logger.error(`Failed to send log to Discord: ${err.message}`);
     });
-  }
+
+    queue.length = 0;
+  }, 2000);
 }
 
 export const info = (message: string) => log("info", message);
