@@ -1,39 +1,7 @@
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-} from "discord.js";
+import { EmbedBuilder } from "discord.js";
 import db, { getBug } from "../database.ts";
 import type { IModal } from "../types/Interactions.ts";
-
-function createButtons(bugId: string): ActionRowBuilder<ButtonBuilder> {
-  const actionRow = new ActionRowBuilder<ButtonBuilder>();
-
-  const statusButton = new ButtonBuilder()
-    .setCustomId(`bugStatus-${bugId}`)
-    .setLabel("Status")
-    .setDisabled(true)
-    .setStyle(ButtonStyle.Primary);
-
-  const solvedButton = new ButtonBuilder()
-    .setCustomId(`bugSolved-${bugId}`)
-    .setLabel("Mark as Solved")
-    .setStyle(ButtonStyle.Success);
-
-  const editButton = new ButtonBuilder()
-    .setCustomId(`bugEdit-${bugId}`)
-    .setLabel("Edit")
-    .setStyle(ButtonStyle.Secondary);
-
-  const deleteButton = new ButtonBuilder()
-    .setCustomId(`bugDelete-${bugId}`)
-    .setLabel("Delete")
-    .setStyle(ButtonStyle.Danger);
-
-  actionRow.addComponents(statusButton, solvedButton, editButton, deleteButton);
-  return actionRow;
-}
+import { createButtons } from "../utils/bugUtils.ts";
 
 function threadMessage(userId: string): string {
   return `Hey, <@${userId}>! Thanks for submitting a bug report. This thread has been created for further discussion and for providing any additional information. 
