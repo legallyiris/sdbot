@@ -1,5 +1,5 @@
 import { readdir } from "node:fs/promises";
-import { type Client, Collection } from "discord.js";
+import { Collection } from "discord.js";
 import type { IButton, IModal } from "../types/Interactions.ts";
 
 let buttons = new Collection<string, IButton>();
