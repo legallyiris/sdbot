@@ -1,13 +1,12 @@
 import type { Client, TextChannel } from "discord.js";
-import { getGuild, query } from "../database";
+import { query } from "../database";
 import logger from "./logger";
 
-// const SIX_HOURS = 6 * 60 * 60 * 1000;
-const SIX_HOURS = 6 * 1000;
+const SIX_HOURS = 6 * 60 * 60 * 1000;
 
 export function startTimedMessages(client: Client) {
   setTimeout(() => {
-    sendPeriodicMessages(client);
+    void sendPeriodicMessages(client);
     setInterval(() => sendPeriodicMessages(client), SIX_HOURS);
   }, 1000);
 }
