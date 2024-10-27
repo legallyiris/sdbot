@@ -26,9 +26,9 @@ client.once(Events.ClientReady, async (c) => {
   logger.info("\tDatabase initialized");
   logger.info("Loading events and interactions...");
 
+  await loadButtonsAndModals();
   await loadInteractionsFromDirectory("./src/interactions", client);
   await loadEventsFromDirectory("./src/events", client);
-  await loadButtonsAndModals();
   logger.info("\tEvents and interactions loaded");
 });
 
