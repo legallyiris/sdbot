@@ -38,6 +38,8 @@ export function initializeDatabase() {
       status TEXT CHECK(status IN ('open', 'closed')) DEFAULT 'open',
       title TEXT NOT NULL,
       description TEXT NOT NULL,
+      sent BOOLEAN DEFAULT FALSE,
+      message_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id)
     );

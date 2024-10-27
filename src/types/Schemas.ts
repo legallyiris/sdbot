@@ -29,6 +29,8 @@ export interface BugSchema {
   status: "open" | "closed";
   title: string;
   description: string;
+  sent: boolean;
+  message_id: string;
   created_at: Date;
 }
 
