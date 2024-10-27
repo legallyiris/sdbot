@@ -114,9 +114,14 @@ export function run(sql: string, params?: SQLQueryBindings[]): void {
   else db.query(sql).run();
 }
 
-export function getUser(userId: string, guildId: string) {
+export function getUser(userId: string, guildId: string, useDiscordId = true) {
+  if (useDiscordId)
+    return query<UserSchema>(
+      "SELECT * FROM users WHERE user_id = ? AND guild_id = ?",
+      [userId, guildId],
+    )[0];
   return query<UserSchema>(
-    "SELECT * FROM users WHERE user_id = ? AND guild_id = ?",
+    "SELECT * FROM users WHERE id = ? AND guild_id = ?",
     [userId, guildId],
   )[0];
 }

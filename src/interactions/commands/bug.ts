@@ -69,7 +69,7 @@ async function reportBug(
     const image = createMedia(
       mediaType === "image/png" ? "image" : "video",
       new Uint8Array(mediaBuffer),
-      user.id,
+      Number(interaction.user.id),
       bug.id,
     );
     if (!image) {
