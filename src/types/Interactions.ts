@@ -1,4 +1,5 @@
 import type {
+  AutocompleteInteraction,
   BaseInteraction,
   ButtonInteraction,
   Client,
@@ -15,6 +16,7 @@ export interface Command {
     guildSchema?: GuildSchema,
     userSchema?: UserSchema,
   ) => Promise<void>;
+  autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
 }
 
 export interface IButton {

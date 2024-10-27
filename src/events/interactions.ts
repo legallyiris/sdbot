@@ -1,4 +1,5 @@
 import {
+  type AutocompleteInteraction,
   type BaseInteraction,
   type ButtonInteraction,
   type Client,
@@ -30,7 +31,8 @@ async function handleInteraction(
     | ButtonInteraction
     | ModalSubmitInteraction
     | CommandInteraction
-    | ContextMenuCommandInteraction,
+    | ContextMenuCommandInteraction
+    | AutocompleteInteraction,
   guildSchema: GuildSchema,
   userSchema: UserSchema,
 ): Promise<void> {
@@ -60,6 +62,9 @@ async function handleInteraction(
   if (!command) return;
 
   try {
+    if (interaction.isAutocomplete() && command.autocomplete)
+      return command.autocomplete(interaction);
+
     await command.execute(client, interaction, guildSchema, userSchema);
   } catch (error) {
     console.error(error);
@@ -84,6 +89,8 @@ export default {
     );
 
     if (interaction.isCommand())
+      return handleInteraction(client, interaction, guild, user);
+    if (interaction.isAutocomplete())
       return handleInteraction(client, interaction, guild, user);
     if (interaction.isContextMenuCommand()) {
       if (interaction.isUserContextMenuCommand()) {
