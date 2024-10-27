@@ -1,7 +1,6 @@
 import {
   type BaseInteraction,
   type ButtonInteraction,
-  type CacheType,
   type Client,
   type CommandInteraction,
   type ContextMenuCommandInteraction,
@@ -36,7 +35,7 @@ async function handleInteraction(
   userSchema: UserSchema,
 ): Promise<void> {
   if (interaction.isButton()) {
-    const buttonId = interaction.customId.split("-")[1];
+    const buttonId = interaction.customId.split("-")[0];
     const button = buttons.get(buttonId);
     if (!button)
       void interaction.reply({
@@ -46,7 +45,7 @@ async function handleInteraction(
     else return button.execute(client, interaction, guildSchema, userSchema);
   }
   if (interaction.isModalSubmit()) {
-    const modalId = interaction.customId.split("-")[1];
+    const modalId = interaction.customId.split("-")[0];
     const modal = modals.get(modalId);
     if (!modal)
       void interaction.reply({
@@ -61,7 +60,7 @@ async function handleInteraction(
   if (!command) return;
 
   try {
-    await command.execute(client, interaction);
+    await command.execute(client, interaction, guildSchema, userSchema);
   } catch (error) {
     console.error(error);
     if (interaction.isRepliable()) {
