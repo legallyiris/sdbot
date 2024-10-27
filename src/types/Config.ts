@@ -10,4 +10,5 @@ export interface Config {
   unsplash: UnsplashConfig;
   databasePath: string;
   logChannel: string;
+  images: string[];
 }

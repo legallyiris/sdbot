@@ -13,6 +13,7 @@ function validateConfig(config: Config): asserts config is Config {
     "unsplash",
     "databasePath",
     "logChannel",
+    "images",
   ];
 
   for (const field of requiredFields) {
