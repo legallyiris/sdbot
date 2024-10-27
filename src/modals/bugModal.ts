@@ -35,6 +35,17 @@ function createButtons(bugId: string): ActionRowBuilder<ButtonBuilder> {
   return actionRow;
 }
 
+function threadMessage(userId: string): string {
+  return `Hey, <@${userId}>! Thanks for submitting a bug report. This thread has been created for further discussion and for providing any additional information. 
+  
+Please ensure that your report contains **all the necessary information**, like a clear description of the bug, steps to reproduce it and any other potentially useful information.
+  
+If possible, please provide the output in the console, which can be accessed by pressing F10 or entering /console in the chat.
+Make sure to scroll all the way to the bottom to see the latest logs. 
+  
+You can edit your report at any time by clicking the "Edit" button.`;
+}
+
 export default {
   id: "bug",
   execute: async (_client, interaction, guildSchema, _userSchema) => {
@@ -94,7 +105,8 @@ export default {
       })
       .setTitle(title)
       .setDescription(description)
-      .setFooter({ text: `Bug #${bugId}` });
+      .setFooter({ text: `Submit your own bug with /bug • bug #${bugId}` })
+      .setTimestamp();
 
     if (!bugChannel.isSendable())
       return interaction.reply("Bug channel not sendable.");
@@ -118,6 +130,7 @@ export default {
       autoArchiveDuration: 60,
     });
     await thread.members.add(interaction.user.id);
+    await thread.send(threadMessage(interaction.user.id));
 
     db.exec(
       "UPDATE bugs SET title = ?, description = ?, sent = 1, message_id = ? WHERE id = ?",
