@@ -40,10 +40,9 @@ function createPeriodicMessage(): string {
   const VERIFY_COMMAND = "</verify:1114974748624027711>";
   const GETROLE_COMMAND = "</getrole:836429412861214723>";
 
-  return `
-    # Can't talk? You need to verify.
+  return `# Can't talk? You need to verify.
 
-This server requires you to verify before you can talk, send messages, or interact with others. This is to prevent spam and ensure that Stealth Developers is a safe plae for everyone.
+> This server requires you to verify before you can talk, send messages, or interact with others. This is to prevent spam and ensure that Stealth Developers is a safe plae for everyone.
 
 ## Steps
 
@@ -55,11 +54,15 @@ This server requires you to verify before you can talk, send messages, or intera
 
 ## Verified, but still can't talk?
 
-This is likely because Bloxlink hasn't given you the correct role. To get the role, click ${GETROLE_COMMAND} and send the message. You *should* receive the role within a few seconds.
+This is likely because Bloxlink hasn't done it's job. To fix this, click ${GETROLE_COMMAND} and send the message. You *should* receive the role within a few seconds.
 
 ## Still having issues?
 
 If you're still having issues, please contact a staff member, or Gace. They'll be able to help you out.
+
+# Found a bug?
+
+If you've found a bug in Warfare Tycoon, Ground War, or Airsoft Battles, you can report it here with the \`/bug report\` command.
 
 `.trim();
 }
