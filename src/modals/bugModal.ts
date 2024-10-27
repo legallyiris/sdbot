@@ -1,6 +1,39 @@
-import { EmbedBuilder } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+} from "discord.js";
 import db, { getBug } from "../database.ts";
 import type { IModal } from "../types/Interactions.ts";
+
+function createButtons(bugId: string): ActionRowBuilder<ButtonBuilder> {
+  const actionRow = new ActionRowBuilder<ButtonBuilder>();
+
+  const statusButton = new ButtonBuilder()
+    .setCustomId(`bugStatus-${bugId}`)
+    .setLabel("Status")
+    .setDisabled(true)
+    .setStyle(ButtonStyle.Primary);
+
+  const solvedButton = new ButtonBuilder()
+    .setCustomId(`bugSolved-${bugId}`)
+    .setLabel("Mark as Solved")
+    .setStyle(ButtonStyle.Success);
+
+  const editButton = new ButtonBuilder()
+    .setCustomId(`bugEdit-${bugId}`)
+    .setLabel("Edit")
+    .setStyle(ButtonStyle.Secondary);
+
+  const deleteButton = new ButtonBuilder()
+    .setCustomId(`bugDelete-${bugId}`)
+    .setLabel("Delete")
+    .setStyle(ButtonStyle.Danger);
+
+  actionRow.addComponents(statusButton, solvedButton, editButton, deleteButton);
+  return actionRow;
+}
 
 export default {
   id: "bug",
@@ -67,7 +100,10 @@ export default {
       return interaction.reply("Bug channel not sendable.");
 
     // TODO: Add buttons for status, marking solved, editing and deleting.
-    const message = await bugChannel.send({ embeds: [bugEmbed] });
+    const message = await bugChannel.send({
+      embeds: [bugEmbed],
+      components: [createButtons(bugId)],
+    });
     const reply = await interaction.reply({
       content: `Thanks, your bug report has been sent! [View it here](${message.url})`,
       ephemeral: true,
