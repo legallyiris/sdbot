@@ -4,12 +4,18 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import type { BugSchema } from "../types/Schemas.ts";
 
-export function createModal(bugId: string, title?: string) {
+export function createModal(
+  bugId: string,
+  title?: string,
+  description?: string,
+  editing = false,
+) {
   const usedTitle = title || "";
   const modal = new ModalBuilder()
-    .setTitle(`Bug Report #${bugId}`)
-    .setCustomId(`bug-${bugId}`);
+    .setTitle(editing ? `Editing Bug #${bugId}` : "Create a new bug report")
+    .setCustomId(editing ? `editBug-${bugId}` : `bug-${bugId}`);
 
   const titleInput = new TextInputBuilder()
     .setCustomId("title")
@@ -23,6 +29,7 @@ export function createModal(bugId: string, title?: string) {
   const descriptionInput = new TextInputBuilder()
     .setCustomId("description")
     .setLabel("Description")
+    .setValue(description || "")
     .setPlaceholder("Enter a description for the bug report.")
     .setStyle(TextInputStyle.Paragraph)
     .setMaxLength(4000)
@@ -37,4 +44,8 @@ export function createModal(bugId: string, title?: string) {
 
   modal.addComponents(titleRow, descriptionRow);
   return modal;
+}
+
+export function editModal(bug: BugSchema) {
+  return createModal(bug.id.toString(), bug.title, bug.description, true);
 }
