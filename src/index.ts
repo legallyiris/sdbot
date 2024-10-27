@@ -1,4 +1,5 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
+import { startTimedMessages } from "./utils/tasks";
 
 import config from "./config";
 import db, { initializeDatabase } from "./database";
@@ -30,6 +31,8 @@ client.once(Events.ClientReady, async (c) => {
   await loadInteractionsFromDirectory("./src/interactions", client);
   await loadEventsFromDirectory("./src/events", client);
   logger.info("\tEvents and interactions loaded");
+
+  startTimedMessages(client);
 });
 
 void client.login(config.token);
