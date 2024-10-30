@@ -38,3 +38,9 @@ export interface IModal {
     userSchema?: UserSchema,
   ) => Promise<void>;
 }
+
+export interface IEvent {
+  event: string;
+  execute: (client: Client, ...args: unknown[]) => Promise<void>;
+  once?: boolean;
+}

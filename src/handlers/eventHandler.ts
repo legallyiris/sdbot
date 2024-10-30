@@ -1,15 +1,10 @@
 import { readdir } from "node:fs/promises";
 import { type Client, Collection } from "discord.js";
-
-interface Event {
-  event: string;
-  execute: (client: Client, ...args: unknown[]) => Promise<void>;
-  once?: boolean;
-}
+import type { IEvent } from "../types/Interactions.ts";
 
 async function registerEvents(
   client: Client,
-  events: Collection<string, Event>,
+  events: Collection<string, IEvent>,
 ): Promise<void> {
   for (const [name, event] of events) {
     if (event.once)
@@ -23,7 +18,7 @@ async function loadEventsFromDirectory(
   client: Client,
 ): Promise<void> {
   const eventFiles = await readdir(directory);
-  const events = new Collection<string, Event>();
+  const events = new Collection<string, IEvent>();
 
   for (const file of eventFiles) {
     const { default: event } = await import(`../events/${file}`);
