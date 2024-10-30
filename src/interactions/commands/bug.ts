@@ -106,6 +106,31 @@ async function helpBug(interaction: ChatInputCommandInteraction) {
   });
 }
 
+async function buttonBug(interaction: ChatInputCommandInteraction) {
+  if (!interaction.guildId)
+    return errorMessage(interaction, "An error occurred.");
+  const targetUser = interaction.options.getUser("user");
+  if (!targetUser) return errorMessage(interaction, "Please provide a user.");
+
+  const user = getUser(targetUser.id, interaction.guildId) || targetUser;
+  const bug = createBug(user.id, "", "");
+
+  const button = new ButtonBuilder()
+    .setStyle(1)
+    .setLabel("Click here to report a bug")
+    .setCustomId(`bug-${bug.id}`);
+
+  const actionRow =
+    new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+      button,
+    );
+
+  await interaction.reply({
+    content: `<@${targetUser.id}>, click the button below to report a bug. Requested by <@${interaction.user.id}>. You can also use the </bug report:${interaction.commandId}> command in future.`,
+    components: [actionRow],
+  });
+}
+
 const command = new SlashCommandBuilder()
   .setName("bug")
   .setDescription("Report a bug to the developers.")
@@ -133,6 +158,17 @@ const command = new SlashCommandBuilder()
   )
   .addSubcommand((subcommand) =>
     subcommand.setName("help").setDescription("Get help with reporting a bug."),
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName("button")
+      .setDescription("Sends a button for users to click.")
+      .addUserOption((option) =>
+        option
+          .setName("user")
+          .setDescription("The user to send the button to.")
+          .setRequired(true),
+      ),
   );
 
 export default {
@@ -152,5 +188,6 @@ export default {
     const subcommand = interaction.options.getSubcommand();
     if (subcommand === "report") return await reportBug(interaction, user);
     if (subcommand === "help") return await helpBug(interaction);
+    if (subcommand === "button") return await buttonBug(interaction);
   },
 };
