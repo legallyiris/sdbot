@@ -4,9 +4,11 @@ import {
   type ButtonInteraction,
   ButtonStyle,
   type Client,
+  EmbedBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  type User,
 } from "discord.js";
 import db, { getBug } from "../database.ts";
 import type { BugSchema, UserSchema } from "../types/Schemas.ts";
@@ -58,25 +60,20 @@ export function editModal(bug: BugSchema) {
 
 export function createButtons(
   bugId: string,
+  bug: BugSchema,
   open = true,
+  url = "",
 ): ActionRowBuilder<ButtonBuilder> {
   const actionRow = new ActionRowBuilder<ButtonBuilder>();
 
-  const statusButton = new ButtonBuilder()
-    .setCustomId(`bugStatus-${bugId}`)
-    .setLabel(`Status: ${open ? "Open" : "Closed"}`)
-    .setDisabled(true)
-    .setStyle(ButtonStyle.Primary);
-
   const solvedButton = new ButtonBuilder()
     .setCustomId(open ? `bugSolved-${bugId}` : `bugReopen-${bugId}`)
-    .setLabel(open ? "Mark as Solved" : "Reopen")
-    .setStyle(ButtonStyle.Success);
+    .setLabel(open ? "Close" : "Reopen")
+    .setStyle(ButtonStyle.Primary);
 
   const editButton = new ButtonBuilder()
     .setCustomId(`bugEdit-${bugId}`)
     .setLabel("Edit")
-    .setDisabled(!open)
     .setStyle(ButtonStyle.Secondary);
 
   const deleteButton = new ButtonBuilder()
@@ -84,8 +81,28 @@ export function createButtons(
     .setLabel("Delete")
     .setStyle(ButtonStyle.Danger);
 
-  actionRow.addComponents(statusButton, solvedButton, editButton, deleteButton);
+  const title = encodeURIComponent(bug.title);
+  const source = encodeURIComponent(url);
+  const link = `https://trello.com/add-card?name=${title}&url=${source}?idBoard=95bcpKcU`;
+  const trelloButton = new ButtonBuilder()
+    .setURL(link)
+    .setLabel("Add to Trello")
+    .setStyle(ButtonStyle.Link);
+
+  actionRow.addComponents(solvedButton, editButton, deleteButton, trelloButton);
   return actionRow;
+}
+
+export function createEmbed(bug: BugSchema, user: User) {
+  return new EmbedBuilder()
+    .setAuthor({
+      name: user.username,
+      iconURL: user?.avatarURL() || undefined,
+    })
+    .setTitle(bug.title)
+    .setDescription(bug.description)
+    .setFooter({ text: `Submit your own bug with /bug • bug #${bug.id}` })
+    .setTimestamp();
 }
 
 export async function getBugAndPermissions(
@@ -123,7 +140,7 @@ export async function updateBugStatus(
   if (!message) return;
 
   await message.edit({
-    components: [createButtons(bugId, status === "open")],
+    components: [createButtons(bugId, bug, status === "open", message.url)],
   });
 
   const thread = message.thread;

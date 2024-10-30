@@ -1,6 +1,6 @@
-import { EmbedBuilder } from "discord.js";
 import db, { getBug } from "../database.ts";
 import type { IModal } from "../types/Interactions.ts";
+import { createEmbed } from "../utils/bugUtils.ts";
 
 export default {
   id: "editBug",
@@ -64,21 +64,18 @@ export default {
         ephemeral: true,
       });
 
-    const embed = message.embeds[0];
-    const newEmbed = EmbedBuilder.from(embed)
-      .setTitle(title)
-      .setDescription(description);
-
-    await message.edit({ embeds: [newEmbed] });
-    await interaction.reply({
-      content: ":white_check_mark: Bug edited",
-      ephemeral: true,
-    });
-
     db.exec("UPDATE bugs SET title = ?, description = ? WHERE id = ?", [
       title,
       description,
       bugId,
     ]);
+    const newBug = getBug(Number(bugId));
+
+    const embed = createEmbed(newBug, interaction.user);
+    await message.edit({ embeds: [embed] });
+    await interaction.reply({
+      content: ":white_check_mark: Bug edited",
+      ephemeral: true,
+    });
   },
 } as IModal;

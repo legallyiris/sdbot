@@ -1,7 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import db, { getBug } from "../database.ts";
 import type { IModal } from "../types/Interactions.ts";
-import { createButtons } from "../utils/bugUtils.ts";
+import { createButtons, createEmbed } from "../utils/bugUtils.ts";
 
 function threadMessage(userId: string): string {
   return `Hey, <@${userId}>! Thanks for submitting a bug report. This thread has been created for further discussion and for providing any additional information. 
@@ -66,24 +66,19 @@ export default {
     }
 
     // TODO: Add media.
-    const bugEmbed = new EmbedBuilder()
-      .setAuthor({
-        name: interaction.user.username,
-        iconURL: interaction.user?.avatarURL() || undefined,
-      })
-      .setTitle(title)
-      .setDescription(description)
-      .setFooter({ text: `Submit your own bug with /bug • bug #${bugId}` })
-      .setTimestamp();
+    const bugEmbed = createEmbed(bug, interaction.user);
 
     if (!bugChannel.isSendable())
       return interaction.reply("Bug channel not sendable.");
 
-    // TODO: Add buttons for status, marking solved, editing and deleting.
     const message = await bugChannel.send({
       embeds: [bugEmbed],
-      components: [createButtons(bugId)],
     });
+
+    await message.edit({
+      components: [createButtons(bugId, bug, true, message.url)],
+    });
+
     const reply = await interaction.reply({
       content: `Thanks, your bug report has been sent! [View it here](${message.url})`,
       ephemeral: true,
