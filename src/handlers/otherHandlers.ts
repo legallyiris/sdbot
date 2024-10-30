@@ -24,8 +24,6 @@ async function loadFromDir<T>(
 async function loadButtonsAndModals(): Promise<void> {
   buttons = await loadFromDir("buttons", buttons);
   modals = await loadFromDir("modals", modals);
-
-  console.log(modals);
 }
 
 export { buttons, modals, loadButtonsAndModals };
