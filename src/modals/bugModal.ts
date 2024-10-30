@@ -66,6 +66,7 @@ export default {
     }
 
     bug.description = description;
+    bug.title = title;
     const bugEmbed = createEmbed(bug, interaction.user);
 
     if (!bugChannel.isSendable())
