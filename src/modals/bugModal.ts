@@ -1,5 +1,5 @@
-import { EmbedBuilder } from "discord.js";
-import db, { getBug } from "../database.ts";
+import { AttachmentBuilder, type Message } from "discord.js";
+import db, { getBug, getMediaByBugId } from "../database.ts";
 import type { IModal } from "../types/Interactions.ts";
 import { createButtons, createEmbed } from "../utils/bugUtils.ts";
 
@@ -65,15 +65,36 @@ export default {
       });
     }
 
-    // TODO: Add media.
+    bug.description = description;
     const bugEmbed = createEmbed(bug, interaction.user);
 
     if (!bugChannel.isSendable())
       return interaction.reply("Bug channel not sendable.");
 
-    const message = await bugChannel.send({
-      embeds: [bugEmbed],
-    });
+    let message: Message;
+    const media = getMediaByBugId(bug.id);
+    if (media) {
+      const buffer = Buffer.from(media.data);
+      const attachment = new AttachmentBuilder(buffer, {
+        name: `media.${media.media_type === "image" ? "png" : "mp4"}`,
+      });
+
+      message = await bugChannel.send({
+        embeds: [bugEmbed],
+        files: [attachment],
+      });
+    } else {
+      message = await bugChannel.send({
+        embeds: [bugEmbed],
+      });
+    }
+
+    if (!message) {
+      return interaction.reply({
+        content: "Failed to send bug report.",
+        ephemeral: true,
+      });
+    }
 
     await message.edit({
       components: [createButtons(bugId, bug, true, message.url)],

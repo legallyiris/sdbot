@@ -37,7 +37,7 @@ export interface BugSchema {
 export interface MediaSchema {
   id: number;
   media_type: "image" | "video";
-  data: Buffer;
+  data: Uint8Array;
   user_id: number;
   bug_id: number;
   created_at: Date;

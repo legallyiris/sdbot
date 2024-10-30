@@ -139,3 +139,10 @@ export function getBug(bugId: number) {
 export function getMedia(mediaId: number) {
   return get<MediaSchema>("SELECT * FROM media WHERE id = ?", [mediaId]);
 }
+
+export function getMediaByBugId(bugId: number) {
+  const bugs = query<MediaSchema>("SELECT * FROM media WHERE bug_id = ?", [
+    bugId,
+  ]);
+  return bugs[0];
+}
