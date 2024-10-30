@@ -75,12 +75,14 @@ export function createBug(
   userId: number,
   title: string,
   description: string,
+  sent = false,
+  messageId?: string,
 ): BugSchema {
   return db
     .query(
-      "INSERT INTO bugs (user_id, title, description) VALUES (?, ?, ?) RETURNING *",
+      "INSERT INTO bugs (user_id, title, description, sent, message_id) VALUES (?, ?, ?, ?, ?) RETURNING *",
     )
-    .get(userId, title, description) as BugSchema;
+    .get(userId, title, description, sent, messageId ?? null) as BugSchema;
 }
 
 export function createMedia(

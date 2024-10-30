@@ -12,6 +12,7 @@ import { createGuild, createUser, getGuild, getUser } from "../database.ts";
 import { commands } from "../handlers/interactionHandler.ts";
 import { buttons, modals } from "../handlers/otherHandlers.ts";
 import type { GuildSchema, UserSchema } from "../types/Schemas.ts";
+import { portButton } from "../utils/legacy.ts";
 import logger from "../utils/logger.ts";
 
 function checkUser(userId: string, guildId: string): UserSchema {
@@ -39,12 +40,23 @@ async function handleInteraction(
   if (interaction.isButton()) {
     const buttonId = interaction.customId.split("-")[0];
     const button = buttons.get(buttonId);
-    if (!button)
-      void interaction.reply({
-        content: "This button is not supported.",
-        ephemeral: true,
-      });
-    else return button.execute(client, interaction, guildSchema, userSchema);
+    if (!button) {
+      console.log("buttonId", buttonId);
+
+      // if it is either solved, edit or delete, then they are legacy buttons
+      // we need to handle them differently to port them to the new system
+      const legacyButtons = ["solved", "edit", "delete"];
+      if (legacyButtons.includes(buttonId)) {
+        await portButton(interaction, client);
+      } else {
+        void interaction.reply({
+          content: "This button is not supported.",
+          ephemeral: true,
+        });
+      }
+    } else {
+      return button.execute(client, interaction, guildSchema, userSchema);
+    }
   }
   if (interaction.isModalSubmit()) {
     const modalId = interaction.customId.split("-")[0];
