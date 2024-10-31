@@ -45,7 +45,7 @@ export default {
     if (attachments.size === 0)
       return errorMessage(interaction, "There's nothing to highlight.");
 
-    const messageToSend = `:star: New highlight from <@${message.member?.id ?? "unknown"}>\n-# [Jump to message](${message.url})`;
+    const messageToSend = `:star: New highlight from <@${message.author.id}>\n-# [Jump to message](${message.url})`;
 
     const files = attachments.map((attachment) => attachment.url);
 
