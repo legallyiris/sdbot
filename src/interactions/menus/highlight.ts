@@ -54,7 +54,11 @@ export default {
         interaction,
         "I don't have permission to send messages in the highlight channel.",
       );
-    await highlightChannel.send({ content: messageToSend, files });
+    const sentMessage = await highlightChannel.send({
+      content: messageToSend,
+      files,
+    });
+    await sentMessage.react("⭐");
 
     if (highlightChannel.lastMessage)
       await interaction.editReply(
