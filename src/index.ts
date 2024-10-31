@@ -46,3 +46,11 @@ async function shutdown() {
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+
+process.on("unhandledRejection", (error: unknown) => {
+  logger.error(`Unhandled promise rejection: ${error}`);
+});
+
+process.on("uncaughtException", (error: unknown) => {
+  logger.error(`Uncaught exception: ${error}`);
+});
