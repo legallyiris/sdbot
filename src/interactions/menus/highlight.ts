@@ -95,7 +95,7 @@ export default {
         content: messageToSend,
         files: attachmentData,
       });
-
+      await message.react("⭐");
       await interaction.editReply(`Highlight sent! ${highlight.url}`);
     } catch (error) {
       logger.error(`Failed to send highlight: ${error}`);
