@@ -20,6 +20,7 @@ const client = new Client({
 logger.initDiscordLogger(client);
 
 client.once(Events.ClientReady, async (c) => {
+  client.rest.options.timeout = 180_000;
   logger.info(`Logged in as \`${c.user?.tag}\``);
   logger.info("Initializing database...");
 
