@@ -1,4 +1,11 @@
-import type { Client, TextChannel } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  type Client,
+  EmbedBuilder,
+  type TextChannel,
+} from "discord.js";
 import { query } from "../database";
 import logger from "./logger";
 
@@ -27,8 +34,32 @@ async function sendPeriodicMessages(client: Client) {
       if (!channel || !channel.isTextBased()) continue;
 
       const message = createPeriodicMessage();
+      const URLS = {
+        verify: "https://blox.link/dashboard/user/verifications",
+        tutorial: "https://youtu.be/SbDltmom1R8",
+      };
 
-      await channel.send(message);
+      const verifyButton = new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel("Click here to verify")
+        .setURL(URLS.verify)
+        .setEmoji("✅");
+
+      const tutorialButton = new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel("Need help? Watch the tutorial")
+        .setURL(URLS.tutorial)
+        .setEmoji("📹");
+
+      const getRoleRow = new ActionRowBuilder<ButtonBuilder>();
+      getRoleRow.addComponents(verifyButton, tutorialButton);
+
+      const embed = new EmbedBuilder()
+        .setColor("#2F3136")
+        .setDescription(message)
+        .setTimestamp();
+
+      await channel.send({ embeds: [embed], components: [getRoleRow] });
       logger.info(`Sent periodic message to ${guild.name} (${guild.id})`);
     }
   } catch (error) {
@@ -40,29 +71,23 @@ function createPeriodicMessage(): string {
   const VERIFY_COMMAND = "</verify:1114974748624027711>";
   const GETROLE_COMMAND = "</getrole:836429412861214723>";
 
-  return `# Can't talk? You need to verify.
+  return `# Can't talk? Verify now!
 
-> This server requires you to verify before you can talk, send messages, or interact with others. This is to prevent spam and ensure that Stealth Developers is a safe plae for everyone.
+You need to verify to talk, send messages, or interact. This helps keep Stealth Developers safe.
 
-## Steps
+**Click "Click here to verify" below to verify your account.** After that, you can talk and interact. If you need help, **click "Need help? Watch the tutorial"** or ask a staff member.
+You can also use the ${VERIFY_COMMAND} command to verify.
 
-1. Click ${VERIFY_COMMAND} and send the message.
-2. You will see three buttons.
-   - Click the first button to verify.
-   - Click the second button to see a video tutorial.
-3. Follow the steps on the website or the video.
+## Verified but still can't talk?
 
-## Verified, but still can't talk?
-
-This is likely because Bloxlink hasn't done it's job. To fix this, click ${GETROLE_COMMAND} and send the message. You *should* receive the role within a few seconds.
+Bloxlink might not have worked. Click ${GETROLE_COMMAND} and send the message. You should get the role in a few seconds.
 
 ## Still having issues?
 
-If you're still having issues, please contact a staff member, or Gace. They'll be able to help you out.
+Contact a staff member or Gace for help.
 
 # Found a bug?
 
-If you've found a bug in Warfare Tycoon, Ground War, or Airsoft Battles, you can report it here with the \`/bug report\` command.
-
+Report bugs in Warfare Tycoon, Ground War, or Airosft Battles with the \`/bug report\` command.
 `.trim();
 }
