@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import type { GuildSchema, UserSchema } from "../../types/Schemas.ts";
 import logger from "../../utils/logger.ts";
-import { errorMessage } from "../../utils/misc.ts";
+import { errorMessage, isManager } from "../../utils/misc.ts";
 
 const data = new ContextMenuCommandBuilder()
   .setName("Highlight Clip")
@@ -16,13 +16,21 @@ const data = new ContextMenuCommandBuilder()
 export default {
   data: data.toJSON(),
   async execute(
-    _client: Client,
+    client: Client,
     interaction: MessageContextMenuCommandInteraction,
     guildSchema: GuildSchema,
     _userSchema: UserSchema,
   ) {
     if (!interaction.guild) return;
     await interaction.deferReply({ ephemeral: true });
+
+    const canHighlight = await isManager(
+      client,
+      interaction.user,
+      interaction.guild.id,
+    );
+    if (!canHighlight)
+      return errorMessage(interaction, "You can't highlight messages");
 
     const highlightChannelId = guildSchema.highlights_channel;
     if (!highlightChannelId || highlightChannelId === "")
