@@ -14,6 +14,7 @@ function validateConfig(config: Config): asserts config is Config {
     "databasePath",
     "logChannel",
     "images",
+    "rblx",
   ];
 
   for (const field of requiredFields) {

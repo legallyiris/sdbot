@@ -11,4 +11,5 @@ export interface Config {
   databasePath: string;
   logChannel: string;
   images: string[];
+  rblx: string;
 }
