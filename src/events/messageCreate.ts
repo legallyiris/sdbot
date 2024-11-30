@@ -103,6 +103,7 @@ async function convertVideos(_client: Client, message: Message) {
         );
         ffmpeg(inputPath)
           .setFfmpegPath(usedPath)
+          .outputOptions(["-preset ultrafast", "-crf 28", "-threads 4"])
           .output(outputPath)
           .on("end", () => {
             logger.info(`converted video to MP4: ${attachment.name}`);
