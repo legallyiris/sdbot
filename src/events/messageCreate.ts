@@ -15,7 +15,24 @@ import { getBug, getGuild, getUser } from "../database.ts";
 import type { IEvent } from "../types/Interactions.ts";
 import logger from "../utils/logger.ts";
 
+logger.info(ffmpegPath ? `ffmpeg path: ${ffmpegPath}` : "ffmpeg path not set");
+if (!ffmpegPath) {
+  ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
+  logger.warn("ffmpeg path not set");
+}
+
 const pipelineAsync = promisify(pipeline);
+
+const formatSize = (size: number) => {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let usedSize = size;
+  let unitIndex = 0;
+  while (usedSize > 1024) {
+    usedSize /= 1024;
+    unitIndex++;
+  }
+  return `${usedSize.toFixed(2)} ${units[unitIndex]}`;
+};
 
 async function convertVideos(_client: Client, message: Message) {
   const channels = ["896061337069830144", "1278372569044746373"];
@@ -24,7 +41,8 @@ async function convertVideos(_client: Client, message: Message) {
   const skippedFormats = ["mp4", "mov", "webm"];
   const attachments = message.attachments.filter(
     (attachment) =>
-      !skippedFormats.includes(<string>attachment.name.split(".").pop()),
+      attachment.contentType?.startsWith("video/") &&
+      !skippedFormats.includes(attachment.name.split(".")[1]),
   );
   if (!attachments.size) return;
 
@@ -42,7 +60,7 @@ async function convertVideos(_client: Client, message: Message) {
     if (!existsSync("./tmp")) mkdirSync("./tmp");
 
     await replyMessage.edit({
-      content: `${messageContent} • Downloading ${attachment.name} (${attachment.size / 1024 / 1024} MB)...`,
+      content: `${messageContent} • Downloading ${attachment.name} (${formatSize(attachment.size)})`,
     });
 
     const response = await fetch(attachment.url);
@@ -52,7 +70,7 @@ async function convertVideos(_client: Client, message: Message) {
     }
     if (!response.body) throw new Error("Response body is empty");
     await replyMessage.edit(
-      `${messageContent} • Downloaded ${attachment.name} (${attachment.size / 1024 / 1024} MB)`,
+      `${messageContent} • Downloaded ${attachment.name} (${formatSize(attachment.size)})`,
     );
     // @ts-ignore
     await pipelineAsync(response.body, createWriteStream(inputPath));
