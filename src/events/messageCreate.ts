@@ -1,11 +1,125 @@
-import { Events, type Message } from "discord.js";
+import { createWriteStream, existsSync, mkdirSync, unlink } from "node:fs";
+import { pipeline } from "node:stream";
+import { promisify } from "node:util";
+
+import {
+  AttachmentBuilder,
+  type Client,
+  Events,
+  type Message,
+} from "discord.js";
+import ffmpegPath from "ffmpeg-static";
+import ffmpeg from "fluent-ffmpeg";
+
 import { getBug, getGuild, getUser } from "../database.ts";
 import type { IEvent } from "../types/Interactions.ts";
+import logger from "../utils/logger.ts";
+
+const pipelineAsync = promisify(pipeline);
+
+async function convertVideos(_client: Client, message: Message) {
+  const channels = ["896061337069830144", "1278372569044746373"];
+  if (!channels.includes(message.channel.id)) return;
+
+  const skippedFormats = ["mp4", "mov", "webm"];
+  const attachments = message.attachments.filter(
+    (attachment) =>
+      !skippedFormats.includes(<string>attachment.name.split(".").pop()),
+  );
+  if (!attachments.size) return;
+
+  const convertedAttachments = [];
+  let messageContent = `**Converted ${convertedAttachments.length}/${attachments.size} video(s)**`;
+  const replyMessage = await message.reply({
+    content: messageContent,
+    allowedMentions: { users: [] },
+  });
+
+  for (const attachment of attachments.values()) {
+    logger.info(`converting video: ${attachment.name}`);
+    const inputPath = `./tmp/${attachment.id}.${attachment.name.split(".")[1]}`;
+    const outputPath = `./tmp/${attachment.id}.${attachment.name.split(".")[1]}.mp4`;
+    if (!existsSync("./tmp")) mkdirSync("./tmp");
+
+    await replyMessage.edit({
+      content: `${messageContent} • Downloading ${attachment.name} (${attachment.size / 1024 / 1024} MB)...`,
+    });
+
+    const response = await fetch(attachment.url);
+    if (!response.ok) {
+      logger.error(`failed to fetch: ${response.statusText}`);
+      throw new Error(`Failed to fetch: ${response.statusText}`);
+    }
+    if (!response.body) throw new Error("Response body is empty");
+    await replyMessage.edit(
+      `${messageContent} • Downloaded ${attachment.name} (${attachment.size / 1024 / 1024} MB)`,
+    );
+    // @ts-ignore
+    await pipelineAsync(response.body, createWriteStream(inputPath));
+
+    await new Promise<void>((resolve, reject) => {
+      if (!ffmpegPath) return reject(new Error("ffmpeg path is not set"));
+      logger.info(`converting video to MP4: ${attachment.name}`);
+      logger.info(`  input: ${inputPath}`);
+      logger.info(`  output: ${outputPath}`);
+      replyMessage.edit(
+        `${messageContent} • Converting ${attachment.name} to MP4...`,
+      );
+      ffmpeg(inputPath)
+        .setFfmpegPath(ffmpegPath)
+        .output(outputPath)
+        .on("end", () => {
+          logger.info(`converted video to MP4: ${attachment.name}`);
+          replyMessage.edit(
+            `${messageContent} • Converted ${attachment.name} to MP4`,
+          );
+          resolve();
+        })
+        .on("error", (err) => {
+          logger.error(`error converting video: ${err.message}`);
+          replyMessage.edit(
+            `${messageContent} • Error converting ${attachment.name} to MP4`,
+          );
+          reject(err);
+        })
+        .run();
+    });
+
+    const mp4Attachment = new AttachmentBuilder(outputPath);
+    convertedAttachments.push(mp4Attachment);
+    messageContent = `**Converted ${convertedAttachments.length}/${attachments.size} video(s)**`;
+  }
+
+  if (convertedAttachments.length) {
+    await message.reply({
+      content: `Converted ${convertedAttachments.length} video(s)`,
+      files: convertedAttachments,
+      allowedMentions: { users: [] },
+    });
+    await replyMessage.delete();
+  } else {
+    await replyMessage.edit("Failed to convert video(s)");
+  }
+
+  for (const attachment of attachments.values()) {
+    const inputPath = `./tmp/${attachment.id}.${attachment.name.split(".")[1]}`;
+    const outputPath = `./tmp/${attachment.id}.${attachment.name.split(".")[1]}.mp4`;
+    if (existsSync(inputPath))
+      unlink(inputPath, (err) => {
+        if (err) logger.error(`failed to delete file: ${err.message}`);
+      });
+    if (existsSync(outputPath))
+      unlink(outputPath, (err) => {
+        if (err) logger.error(`failed to delete file: ${err.message}`);
+      });
+  }
+}
 
 export default {
   event: Events.MessageCreate,
   async execute(client, message: Message) {
     if (message.author.bot || !message.guild) return;
+    await convertVideos(client, message);
 
     const bugId = message.content.match(/bug#(\d+)/);
     if (!bugId) return;
