@@ -21,6 +21,12 @@ if (!ffmpegPath) {
   logger.warn("ffmpeg path not set");
 }
 
+const exists = existsSync(ffmpegPath);
+if (!exists) {
+  ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
+  logger.warn("ffmpeg path not set - using default path");
+}
+
 const pipelineAsync = promisify(pipeline);
 
 const formatSize = (size: number) => {
@@ -75,33 +81,45 @@ async function convertVideos(_client: Client, message: Message) {
     // @ts-ignore
     await pipelineAsync(response.body, createWriteStream(inputPath));
 
-    await new Promise<void>((resolve, reject) => {
-      if (!ffmpegPath) return reject(new Error("ffmpeg path is not set"));
-      logger.info(`converting video to MP4: ${attachment.name}`);
-      logger.info(`  input: ${inputPath}`);
-      logger.info(`  output: ${outputPath}`);
-      replyMessage.edit(
-        `${messageContent} • Converting ${attachment.name} to MP4...`,
-      );
-      ffmpeg(inputPath)
-        .setFfmpegPath(ffmpegPath)
-        .output(outputPath)
-        .on("end", () => {
-          logger.info(`converted video to MP4: ${attachment.name}`);
-          replyMessage.edit(
-            `${messageContent} • Converted ${attachment.name} to MP4`,
-          );
-          resolve();
-        })
-        .on("error", (err) => {
-          logger.error(`error converting video: ${err.message}`);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        if (!ffmpegPath) {
+          logger.error("ffmpeg path is not set");
           replyMessage.edit(
             `${messageContent} • Error converting ${attachment.name} to MP4`,
           );
-          reject(err);
-        })
-        .run();
-    });
+          return reject(new Error("ffmpeg path is not set"));
+        }
+        logger.info(`converting video to MP4: ${attachment.name}`);
+        logger.info(`  input: ${inputPath}`);
+        logger.info(`  output: ${outputPath}`);
+        replyMessage.edit(
+          `${messageContent} • Converting ${attachment.name} to MP4...`,
+        );
+        ffmpeg(inputPath)
+          .setFfmpegPath(ffmpegPath)
+          .output(outputPath)
+          .on("end", () => {
+            logger.info(`converted video to MP4: ${attachment.name}`);
+            replyMessage.edit(
+              `${messageContent} • Converted ${attachment.name} to MP4`,
+            );
+            resolve();
+          })
+          .on("error", (err) => {
+            logger.error(`error converting video: ${err.message}`);
+            replyMessage.edit(
+              `${messageContent} • Error converting ${attachment.name} to MP4`,
+            );
+            reject(err);
+          })
+          .run();
+      });
+    } catch (err) {
+      // @ts-ignore
+      logger.error(`failed to convert video: ${err.message}`);
+      continue;
+    }
 
     const mp4Attachment = new AttachmentBuilder(outputPath);
     convertedAttachments.push(mp4Attachment);
