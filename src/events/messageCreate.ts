@@ -15,15 +15,16 @@ import { getBug, getGuild, getUser } from "../database.ts";
 import type { IEvent } from "../types/Interactions.ts";
 import logger from "../utils/logger.ts";
 
+let usedPath = ffmpegPath;
 logger.info(ffmpegPath ? `ffmpeg path: ${ffmpegPath}` : "ffmpeg path not set");
 if (!ffmpegPath) {
-  ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
+  usedPath = "/usr/bin/ffmpeg";
   logger.warn("ffmpeg path not set");
 }
 
 const exists = existsSync(ffmpegPath);
 if (!exists) {
-  ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
+  usedPath = "/usr/bin/ffmpeg";
   logger.warn("ffmpeg path not set - using default path");
 }
 
@@ -41,7 +42,11 @@ const formatSize = (size: number) => {
 };
 
 async function convertVideos(_client: Client, message: Message) {
-  const channels = ["896061337069830144", "1278372569044746373"];
+  const channels = [
+    "896061337069830144",
+    "1278372569044746373",
+    "1301334875017576478",
+  ];
   if (!channels.includes(message.channel.id)) return;
 
   const skippedFormats = ["mp4", "mov", "webm"];
@@ -83,7 +88,7 @@ async function convertVideos(_client: Client, message: Message) {
 
     try {
       await new Promise<void>((resolve, reject) => {
-        if (!ffmpegPath) {
+        if (!usedPath) {
           logger.error("ffmpeg path is not set");
           replyMessage.edit(
             `${messageContent} • Error converting ${attachment.name} to MP4`,
@@ -97,7 +102,7 @@ async function convertVideos(_client: Client, message: Message) {
           `${messageContent} • Converting ${attachment.name} to MP4...`,
         );
         ffmpeg(inputPath)
-          .setFfmpegPath(ffmpegPath)
+          .setFfmpegPath(usedPath)
           .output(outputPath)
           .on("end", () => {
             logger.info(`converted video to MP4: ${attachment.name}`);
