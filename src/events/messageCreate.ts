@@ -49,9 +49,7 @@ async function convertVideos(_client: Client, message: Message) {
   ];
   if (!channels.includes(message.channel.id)) return;
 
-  const skippedFormats = ["mp4", "mov", "webm"];
-  console.log(message.attachments);
-
+  const skippedFormats = ["mp4", "mov", "webm", "quicktime"];
   const attachments = message.attachments.filter(
     (attachment) =>
       attachment.contentType?.startsWith("video/") &&
