@@ -169,6 +169,10 @@ export default {
       void message.reply("khls stinks");
     }
 
+    if (message.content.trim() === "you suck") {
+      void message.reply("khls sucks");
+    }
+
     const bugId = message.content.match(/bug#(\d+)/);
     if (!bugId) return;
 
