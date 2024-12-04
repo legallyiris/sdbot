@@ -17,6 +17,17 @@ export const errorMessage = async (
   interaction: AnyCommandInteraction,
   message: string,
 ) => {
+  if (interaction.replied)
+    return await interaction.followUp({
+      content: `❌ ${message}`,
+      ephemeral: true,
+    });
+
+  if (interaction.deferred)
+    return await interaction.editReply({
+      content: `❌ ${message}`,
+    });
+
   return await interaction.reply({
     content: `❌ ${message}`,
     ephemeral: true,
