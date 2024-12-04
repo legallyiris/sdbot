@@ -165,6 +165,10 @@ export default {
     if (message.author.bot || !message.guild) return;
     await convertVideos(client, message);
 
+    if (message.content.trim() === "?stinker") {
+      void message.reply("khls stinks");
+    }
+
     const bugId = message.content.match(/bug#(\d+)/);
     if (!bugId) return;
 
