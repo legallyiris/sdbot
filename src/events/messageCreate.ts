@@ -1,7 +1,3 @@
-import { createWriteStream, existsSync, mkdirSync, unlink } from "node:fs";
-import { pipeline } from "node:stream";
-import { promisify } from "node:util";
-
 import CloudConvert from "cloudconvert";
 import { type Client, Events, type Message } from "discord.js";
 import config from "../config.ts";
@@ -34,6 +30,25 @@ async function convertVideos(_client: Client, message: Message) {
   ];
   if (!channels.includes(message.channel.id)) return;
 
+  const statusMessage = await message.reply({
+    content: "Checking CloudConvert and user quota...",
+    allowedMentions: { users: ["543793990005162015"] },
+  });
+
+  try {
+    const ccUser = await cloudConvert.users.me();
+    if (ccUser.credits <= 0) {
+      return statusMessage.edit(
+        "we ran out of cloudconvert credits lol please consider giving <@543793990005162015> money to buy more",
+      );
+    }
+  } catch (error) {
+    console.error(
+      "couldn't check cloudconvert quota, make sure that user:read is granted to the token",
+    );
+    await statusMessage.edit("Failed to fetch CloudConvert user");
+  }
+
   const skippedFormats = ["mp4", "mov", "webm", "quicktime"];
   const attachments = message.attachments.filter(
     (attachment) =>
@@ -42,9 +57,8 @@ async function convertVideos(_client: Client, message: Message) {
   );
   if (!attachments.size) return;
 
-  const statusMessage = await message.reply({
+  await statusMessage.edit({
     content: `Converting ${attachments.size} video(s)...`,
-    allowedMentions: { users: [] },
   });
 
   const conversionPromises = Array.from(attachments.values()).map(
