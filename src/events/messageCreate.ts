@@ -9,7 +9,10 @@ import { getBug, getGuild, getUser } from "../database.ts";
 import type { IEvent } from "../types/Interactions.ts";
 import logger from "../utils/logger.ts";
 
-const cloudConvert = new CloudConvert(config.cloudconvert, true);
+const cloudConvert = new CloudConvert(
+  config.cloudconvert.token,
+  config.cloudconvert.sandbox,
+);
 
 const formatSize = (size: number) => {
   const units = ["B", "KB", "MB", "GB", "TB"];
