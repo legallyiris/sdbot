@@ -5,21 +5,13 @@ import { getBug, getGuild, getUser } from "../database.ts";
 import type { IEvent } from "../types/Interactions.ts";
 import logger from "../utils/logger.ts";
 
+const userConversions = new Map<string, { count: number; timestamp: number }>();
+const globalConversions = new Map<string, number>();
+
 const cloudConvert = new CloudConvert(
   config.cloudconvert.token,
   config.cloudconvert.sandbox,
 );
-
-const formatSize = (size: number) => {
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let usedSize = size;
-  let unitIndex = 0;
-  while (usedSize > 1024) {
-    usedSize /= 1024;
-    unitIndex++;
-  }
-  return `${usedSize.toFixed(2)} ${units[unitIndex]}`;
-};
 
 async function convertVideos(_client: Client, message: Message) {
   const channels = [
@@ -34,6 +26,43 @@ async function convertVideos(_client: Client, message: Message) {
     content: "Checking CloudConvert and user quota...",
     allowedMentions: { users: ["543793990005162015"] },
   });
+
+  const today = new Date().toDateString();
+  const userId = message.author.id;
+  const userKey = `${userId}-${today}`;
+  const userLimit = userConversions.get(userKey) || {
+    count: 0,
+    timestamp: Date.now(),
+  };
+
+  const attachmentCount = message.attachments.size;
+  if (userLimit.count + attachmentCount >= 2) {
+    const timeToNextDay = Math.floor(
+      (new Date(today).setDate(new Date(today).getDate() + 1) - Date.now()) /
+        1000,
+    );
+    return statusMessage.edit(
+      `you've reached your daily limit of 2 video conversions. try again <t:${Math.floor(Date.now() / 1000 + timeToNextDay)}:R>`,
+    );
+  }
+
+  const currentHour = Math.floor(Date.now() / (1000 * 60 * 60));
+  const hourlyCount = globalConversions.get(currentHour.toString()) || 0;
+
+  if (hourlyCount + attachmentCount >= 3) {
+    const timeToNextHour = Math.floor(
+      (currentHour + 1) * 3600 - Date.now() / 1000,
+    );
+    return statusMessage.edit(
+      `server has reached the hourly limit of 3 video conversions. try again <t:${Math.floor(Date.now() / 1000 + timeToNextHour)}:R>`,
+    );
+  }
+
+  userConversions.set(userKey, {
+    count: userLimit.count + attachmentCount,
+    timestamp: Date.now(),
+  });
+  globalConversions.set(currentHour.toString(), hourlyCount + attachmentCount);
 
   try {
     const ccUser = await cloudConvert.users.me();
