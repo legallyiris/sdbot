@@ -21,6 +21,14 @@ async function convertVideos(_client: Client, message: Message) {
     "1350518945282523186",
   ];
   if (!channels.includes(message.channel.id)) return;
+  const skippedFormats = ["mp4", "mov", "webm", "quicktime"];
+  const attachments = message.attachments.filter(
+    (attachment) =>
+      attachment.contentType?.startsWith("video/") &&
+      !skippedFormats.includes(attachment.contentType.split("/")[1]),
+  );
+  if (!attachments.size) return;
+  const attachmentCount = attachments.size;
 
   const statusMessage = await message.reply({
     content: "Checking CloudConvert and user quota...",
@@ -35,7 +43,6 @@ async function convertVideos(_client: Client, message: Message) {
     timestamp: Date.now(),
   };
 
-  const attachmentCount = message.attachments.size;
   if (userLimit.count + attachmentCount >= 2) {
     const timeToNextDay = Math.floor(
       (new Date(today).setDate(new Date(today).getDate() + 1) - Date.now()) /
@@ -77,14 +84,6 @@ async function convertVideos(_client: Client, message: Message) {
     );
     await statusMessage.edit("Failed to fetch CloudConvert user");
   }
-
-  const skippedFormats = ["mp4", "mov", "webm", "quicktime"];
-  const attachments = message.attachments.filter(
-    (attachment) =>
-      attachment.contentType?.startsWith("video/") &&
-      !skippedFormats.includes(attachment.contentType.split("/")[1]),
-  );
-  if (!attachments.size) return;
 
   await statusMessage.edit({
     content: `Converting ${attachments.size} video(s)...`,
