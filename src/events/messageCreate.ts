@@ -2,33 +2,14 @@ import { createWriteStream, existsSync, mkdirSync, unlink } from "node:fs";
 import { pipeline } from "node:stream";
 import { promisify } from "node:util";
 
-import {
-  AttachmentBuilder,
-  type Client,
-  Events,
-  type Message,
-} from "discord.js";
-import ffmpegPath from "ffmpeg-static";
-import ffmpeg from "fluent-ffmpeg";
-
+import CloudConvert from "cloudconvert";
+import { type Client, Events, type Message } from "discord.js";
+import config from "../config.ts";
 import { getBug, getGuild, getUser } from "../database.ts";
 import type { IEvent } from "../types/Interactions.ts";
 import logger from "../utils/logger.ts";
 
-let usedPath = ffmpegPath;
-logger.info(ffmpegPath ? `ffmpeg path: ${ffmpegPath}` : "ffmpeg path not set");
-if (!ffmpegPath) {
-  usedPath = "/usr/bin/ffmpeg";
-  logger.warn("ffmpeg path not set");
-}
-
-const exists = existsSync(ffmpegPath);
-if (!exists) {
-  usedPath = "/usr/bin/ffmpeg";
-  logger.warn("ffmpeg path not set - using default path");
-}
-
-const pipelineAsync = promisify(pipeline);
+const cloudConvert = new CloudConvert(config.cloudconvert, true);
 
 const formatSize = (size: number) => {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -46,6 +27,7 @@ async function convertVideos(_client: Client, message: Message) {
     "896061337069830144",
     "1278372569044746373",
     "1301334875017576478",
+    "1350518945282523186",
   ];
   if (!channels.includes(message.channel.id)) return;
 
@@ -57,103 +39,64 @@ async function convertVideos(_client: Client, message: Message) {
   );
   if (!attachments.size) return;
 
-  const convertedAttachments = [];
-  let messageContent = `**Converted ${convertedAttachments.length}/${attachments.size} video(s)**`;
-  const replyMessage = await message.reply({
-    content: messageContent,
+  const statusMessage = await message.reply({
+    content: `Converting ${attachments.size} video(s)...`,
     allowedMentions: { users: [] },
   });
 
-  for (const attachment of attachments.values()) {
-    logger.info(`converting video: ${attachment.name}`);
-    const inputPath = `./tmp/${attachment.id}.${attachment.name.split(".")[1]}`;
-    const outputPath = `./tmp/${attachment.id}.${attachment.name.split(".")[1]}.mp4`;
-    if (!existsSync("./tmp")) mkdirSync("./tmp");
+  const conversionPromises = Array.from(attachments.values()).map(
+    async (attachment) => {
+      try {
+        const jobCreate = await cloudConvert.jobs.create({
+          tasks: {
+            "import-file": {
+              operation: "import/url",
+              url: attachment.url,
+            },
+            convert: {
+              operation: "convert",
+              input: "import-file",
+              output_format: "webm",
+            },
+            "export-file": {
+              operation: "export/url",
+              input: "convert",
+            },
+          },
+        });
 
-    await replyMessage.edit({
-      content: `${messageContent} • Downloading ${attachment.name} (${formatSize(attachment.size)})`,
-    });
+        const result = await cloudConvert.jobs.wait(jobCreate.id);
+        const resultData = await cloudConvert.jobs.get(result.id);
 
-    const response = await fetch(attachment.url);
-    if (!response.ok) {
-      logger.error(`failed to fetch: ${response.statusText}`);
-      throw new Error(`Failed to fetch: ${response.statusText}`);
-    }
-    if (!response.body) throw new Error("Response body is empty");
-    await replyMessage.edit(
-      `${messageContent} • Downloaded ${attachment.name} (${formatSize(attachment.size)})`,
-    );
-    // @ts-ignore
-    await pipelineAsync(response.body, createWriteStream(inputPath));
-
-    try {
-      await new Promise<void>((resolve, reject) => {
-        if (!usedPath) {
-          logger.error("ffmpeg path is not set");
-          replyMessage.edit(
-            `${messageContent} • Error converting ${attachment.name} to MP4`,
-          );
-          return reject(new Error("ffmpeg path is not set"));
+        if (resultData.tasks[2].status === "error") {
+          logger.error(`Conversion error: ${resultData.tasks[2].message}`);
+          return null;
         }
-        logger.info(`converting video to MP4: ${attachment.name}`);
-        logger.info(`  input: ${inputPath}`);
-        logger.info(`  output: ${outputPath}`);
-        replyMessage.edit(
-          `${messageContent} • Converting ${attachment.name} to MP4...`,
-        );
-        ffmpeg(inputPath)
-          .setFfmpegPath(usedPath)
-          .outputOptions(["-preset ultrafast", "-crf 28", "-threads 4"])
-          .output(outputPath)
-          .on("end", () => {
-            logger.info(`converted video to MP4: ${attachment.name}`);
-            replyMessage.edit(
-              `${messageContent} • Converted ${attachment.name} to MP4`,
-            );
-            resolve();
-          })
-          .on("error", (err) => {
-            logger.error(`error converting video: ${err.message}`);
-            replyMessage.edit(
-              `${messageContent} • Error converting ${attachment.name} to MP4`,
-            );
-            reject(err);
-          })
-          .run();
-      });
-    } catch (err) {
-      // @ts-ignore
-      logger.error(`failed to convert video: ${err.message}`);
-      continue;
-    }
 
-    const mp4Attachment = new AttachmentBuilder(outputPath);
-    convertedAttachments.push(mp4Attachment);
-    messageContent = `**Converted ${convertedAttachments.length}/${attachments.size} video(s)**`;
-  }
+        const files = cloudConvert.jobs.getExportUrls(resultData);
+        return files[0]?.url || null;
+      } catch (error) {
+        logger.error(`Failed to convert video: ${error}`);
+        return null;
+      }
+    },
+  );
 
-  if (convertedAttachments.length) {
+  const start = Date.now();
+  const results = await Promise.all(conversionPromises);
+  const convertedUrls = results.filter((url) => url !== null) as string[];
+
+  if (convertedUrls.length) {
+    const convertedStrings = convertedUrls
+      .map((url, index) => `[video ${index + 1}](${url})`)
+      .join(" • ");
     await message.reply({
-      content: `Converted ${convertedAttachments.length} video(s)`,
-      files: convertedAttachments,
+      content: `Converted ${convertedUrls.length}/${attachments.size} video(s) in ${Math.floor((Date.now() - start) / 1000)}s\n-# ${convertedStrings}`,
       allowedMentions: { users: [] },
     });
-    await replyMessage.delete();
+    await statusMessage.delete().catch(() => {});
   } else {
-    await replyMessage.edit("Failed to convert video(s)");
-  }
-
-  for (const attachment of attachments.values()) {
-    const inputPath = `./tmp/${attachment.id}.${attachment.name.split(".")[1]}`;
-    const outputPath = `./tmp/${attachment.id}.${attachment.name.split(".")[1]}.mp4`;
-    if (existsSync(inputPath))
-      unlink(inputPath, (err) => {
-        if (err) logger.error(`failed to delete file: ${err.message}`);
-      });
-    if (existsSync(outputPath))
-      unlink(outputPath, (err) => {
-        if (err) logger.error(`failed to delete file: ${err.message}`);
-      });
+    await statusMessage.edit("Failed to convert video(s)");
   }
 }
 

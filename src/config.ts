@@ -15,6 +15,7 @@ function validateConfig(config: Config): asserts config is Config {
     "logChannel",
     "images",
     "rblx",
+    "cloudconvert",
   ];
 
   for (const field of requiredFields) {
