@@ -1,5 +1,6 @@
 import {
   ApplicationCommandType,
+  type BaseGuildTextChannel,
   ChannelType,
   type Client,
   ContextMenuCommandBuilder,
@@ -130,7 +131,7 @@ async function downloadAndPrepareAttachments(
 
 async function sendHighlight(
   interaction: MessageContextMenuCommandInteraction,
-  channel: TextChannel,
+  channel: BaseGuildTextChannel,
   content: string,
   files?: { name: string; attachment: Buffer | string }[],
 ) {
@@ -175,10 +176,18 @@ export default {
 
     const highlightChannel =
       interaction.guild.channels.cache.get(highlightChannelId);
-    if (
-      !highlightChannel?.isTextBased() ||
-      highlightChannel.type !== ChannelType.GuildText
-    )
+    if (!highlightChannel) {
+      return errorMessage(
+        interaction,
+        "The highlight channel couldn't be found, but it's ID is set.",
+      );
+    }
+
+    const isCorrectChannelType =
+      highlightChannel.type === ChannelType.GuildText ||
+      highlightChannel.type === ChannelType.GuildAnnouncement;
+
+    if (!highlightChannel.isTextBased() || !isCorrectChannelType)
       return errorMessage(
         interaction,
         "The highlight channel set up for this server is invalid.",
@@ -240,6 +249,7 @@ export default {
           messageContent,
           attachmentData,
         );
+
         return interaction.editReply(`Highlight sent! ${highlight.url}`);
       }
 
