@@ -33,6 +33,9 @@ async function sendPeriodicMessages(client: Client) {
       ) as TextChannel;
       if (!channel || !channel.isTextBased()) continue;
 
+      const lastMessage = await channel.messages.fetch({ limit: 1 });
+      if (lastMessage.first()?.author.id === client.user?.id) continue;
+
       const message = createPeriodicMessage();
       const URLS = {
         verify: "https://blox.link/dashboard/user/verifications",
